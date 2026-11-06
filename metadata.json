@@ -1,0 +1,8 @@
+{
+  "name": "Mon Appel",
+  "description": "Application de lecture du livre Mon Appel par Isaac Dizolele-Mpungu Wafiduswa.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
