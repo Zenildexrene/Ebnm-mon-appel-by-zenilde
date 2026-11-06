@@ -25,18 +25,48 @@ public class ReaderRepository {
     private static final String KEY_SERIF = "use_serif";
     private static final String KEY_BOOKMARKS = "bookmarks_set";
 
+    private static final String KEY_LANGUAGE = "selected_language";
+
+    private static ReaderRepository instance;
+
     public ReaderRepository(Context context) {
         this.context = context.getApplicationContext();
         this.prefs = this.context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
     }
 
+    public static synchronized ReaderRepository get(Context context) {
+        if (instance == null) {
+            instance = new ReaderRepository(context);
+        }
+        return instance;
+    }
+
+    public String getLanguage() {
+        return prefs.getString(KEY_LANGUAGE, "fr");
+    }
+
+    public void setLanguage(String langCode) {
+        prefs.edit().putString(KEY_LANGUAGE, langCode).apply();
+    }
+
     public String loadRawText() {
-        String saved = prefs.getString(KEY_CUSTOM_TEXT, null);
+        String lang = getLanguage();
+        String assetName;
+        switch (lang) {
+            case "ln": assetName = "mon_appel_ln.txt"; break;
+            case "en": assetName = "mon_appel_en.txt"; break;
+            case "pt": assetName = "mon_appel_pt.txt"; break;
+            case "es": assetName = "mon_appel_es.txt"; break;
+            default: assetName = "mon_appel.txt"; break;
+        }
+
+        String saved = prefs.getString(KEY_CUSTOM_TEXT + "_" + lang, null);
         if (saved != null && !saved.trim().isEmpty()) {
             return saved;
         }
+
         try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(context.getAssets().open("mon_appel.txt"), StandardCharsets.UTF_8))) {
+                new InputStreamReader(context.getAssets().open(assetName), StandardCharsets.UTF_8))) {
             StringBuilder sb = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {
@@ -91,14 +121,19 @@ public class ReaderRepository {
     private String formatBody(String raw) {
         if (raw == null || raw.isEmpty()) return "";
         String[] paragraphs = raw.split("\n\\s*\n");
-        List<String> cleanedList = new ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
         for (String p : paragraphs) {
             String cleaned = p.replaceAll("\\s*\n\\s*", " ").trim();
             if (!cleaned.isEmpty()) {
-                cleanedList.add(cleaned);
+                if (!first) {
+                    sb.append("\n\n");
+                }
+                sb.append(cleaned);
+                first = false;
             }
         }
-        return String.join("\n\n", cleanedList);
+        return sb.toString();
     }
 
     public List<SearchResult> search(String query) {
